@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="SplitTab">
+<meta name="theme-color" content="#1D9E75">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon.png">
+<title>SplitTab</title>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg-primary: #ffffff;
+    --bg-secondary: #f5f5f3;
+    --bg-tertiary: #eeede8;
+    --text-primary: #1a1a1a;
+    --text-secondary: #666660;
+    --text-tertiary: #999994;
+    --border-light: rgba(0,0,0,0.1);
+    --border-mid: rgba(0,0,0,0.18);
+    --border-strong: rgba(0,0,0,0.28);
+    --radius-md: 8px;
+    --radius-lg: 12px;
+    --radius-xl: 16px;
+    --green: #1D9E75;
+    --green-dark: #0F6E56;
+    --green-light: #E1F5EE;
+    --green-text: #085041;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg-primary: #1c1c1e;
+      --bg-secondary: #2c2c2e;
+      --bg-tertiary: #3a3a3c;
+      --text-primary: #f2f2f7;
+      --text-secondary: #aeaeb2;
+      --text-tertiary: #636366;
+      --border-light: rgba(255,255,255,0.08);
+      --border-mid: rgba(255,255,255,0.14);
+      --border-strong: rgba(255,255,255,0.22);
+      --green-light: #0a3d2e;
+      --green-text: #9FE1CB;
+    }
+  }
+  html, body { height: 100%; background: var(--bg-tertiary); }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; -webkit-font-smoothing: antialiased; }
+  #root { min-height: 100%; display: flex; justify-content: center; }
+
+  .app { width: 100%; max-width: 430px; min-height: 100vh; background: var(--bg-tertiary); padding-bottom: 2rem; }
+
+  /* Header */
+  .header { padding: 52px 1rem 0.75rem; display: flex; align-items: center; gap: 10px; background: var(--bg-tertiary); }
+  .header-icon { width: 34px; height: 34px; border-radius: 9px; background: var(--green); display: flex; align-items: center; justify-content: center; color: white; font-size: 17px; }
+  .header-title { font-size: 19px; font-weight: 600; color: var(--text-primary); letter-spacing: -0.3px; }
+
+  /* Step bar */
+  .step-bar { display: flex; padding: 0.75rem 1rem 1rem; gap: 5px; }
+  .step-dot { flex: 1; height: 3px; border-radius: 2px; background: var(--border-light); transition: background 0.3s; }
+  .step-dot.active { background: var(--green); }
+  .step-dot.done { background: #9FE1CB; }
+
+  /* Section */
+  .section { padding: 0 1rem 1rem; }
+  .section-label { font-size: 11px; font-weight: 600; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 8px; }
+
+  /* Card */
+  .card { background: var(--bg-primary); border: 0.5px solid var(--border-light); border-radius: var(--radius-lg); padding: 1rem 1.125rem; margin-bottom: 10px; }
+
+  /* Buttons */
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 11px 16px; border-radius: var(--radius-md); font-size: 14px; font-weight: 500; cursor: pointer; border: 0.5px solid var(--border-mid); background: var(--bg-primary); color: var(--text-primary); transition: background 0.15s, transform 0.1s; width: 100%; }
+  .btn:hover { background: var(--bg-secondary); }
+  .btn:active { transform: scale(0.98); }
+  .btn.primary { background: var(--green); color: white; border-color: var(--green); }
+  .btn.primary:hover { background: var(--green-dark); border-color: var(--green-dark); }
+  .btn.primary:disabled { opacity: 0.5; cursor: not-allowed; }
+  .btn.sm { padding: 7px 12px; font-size: 13px; width: auto; }
+  .btn.xs { padding: 4px 9px; font-size: 12px; width: auto; border-radius: 6px; }
+  .btn-row { display: flex; gap: 8px; }
+
+  /* Upload zone */
+  .upload-zone { border: 1.5px dashed var(--border-mid); border-radius: var(--radius-lg); padding: 2.5rem 1rem; text-align: center; cursor: pointer; transition: border-color 0.2s, background 0.2s; background: var(--bg-secondary); }
+  .upload-zone:hover { border-color: var(--green); background: var(--green-light); }
+  .upload-icon { font-size: 38px; color: var(--green); margin-bottom: 10px; }
+  .upload-text { font-size: 15px; font-weight: 500; color: var(--text-primary); }
+  .upload-sub { font-size: 13px; color: var(--text-tertiary); margin-top: 4px; }
+  input[type=file] { display: none; }
+  .preview-img { width: 100%; border-radius: 10px; max-height: 220px; object-fit: cover; margin-bottom: 10px; display: block; }
+
+  /* Loading */
+  .loading-wrap { text-align: center; padding: 2rem; color: var(--text-secondary); }
+  .spinner { width: 28px; height: 28px; border: 2px solid var(--border-light); border-top-color: var(--green); border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 12px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Person badge */
+  .badge { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 50%; color: white; font-size: 11px; font-weight: 700; flex-shrink: 0; }
+
+  /* Chips */
+  .chip { padding: 4px 11px; border-radius: 20px; font-size: 12px; font-weight: 500; cursor: pointer; border: 1.5px solid var(--border-mid); background: var(--bg-secondary); color: var(--text-secondary); transition: all 0.15s; user-select: none; }
+  .chip.selected { color: white; border-color: transparent; }
+  .person-chips { display: flex; flex-wrap: wrap; gap: 5px; }
+
+  /* Banners */
+  .banner-warn { background: #FAEEDA; border: 0.5px solid #FAC775; border-radius: var(--radius-md); padding: 8px 12px; font-size: 13px; color: #633806; display: flex; align-items: center; gap: 6px; margin-bottom: 10px; }
+  .banner-ok { background: var(--green-light); border: 0.5px solid #9FE1CB; border-radius: var(--radius-md); padding: 8px 12px; font-size: 13px; color: var(--green-text); display: flex; align-items: center; gap: 6px; }
+
+  /* Item block */
+  .item-block { padding-bottom: 11px; margin-bottom: 11px; border-bottom: 0.5px solid var(--border-light); }
+  .item-block:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+  .item-header { display: flex; align-items: flex-start; gap: 6px; margin-bottom: 6px; }
+  .item-qty { font-size: 12px; color: var(--text-tertiary); padding-top: 1px; min-width: 22px; }
+  .item-name { flex: 1; font-size: 14px; color: var(--text-primary); line-height: 1.3; }
+  .item-price { font-size: 13px; color: var(--text-secondary); min-width: 52px; text-align: right; }
+
+  /* Split tags */
+  .split-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 6px; }
+  .split-tag { display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border-radius: 12px; font-size: 11px; font-weight: 500; cursor: pointer; border: 1px solid; transition: opacity 0.15s; }
+  .split-tag:hover { opacity: 0.7; }
+  .split-tag-x { font-size: 10px; opacity: 0.55; }
+
+  /* Progress bar */
+  .partial-bar { height: 3px; border-radius: 2px; background: var(--border-light); margin: 4px 0 7px; overflow: hidden; }
+  .partial-fill { height: 100%; border-radius: 2px; background: var(--green); transition: width 0.35s; }
+
+  /* Actions row */
+  .item-actions { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+
+  /* Fully assigned */
+  .fully-done { display: flex; align-items: center; gap: 6px; }
+  .done-label { font-size: 12px; color: var(--green); display: flex; align-items: center; gap: 4px; }
+
+  /* Extras card */
+  .extras-row { display: flex; justify-content: space-between; font-size: 13px; padding: 3px 0; color: var(--text-secondary); }
+
+  /* Summary */
+  .summary-card { background: var(--bg-primary); border: 0.5px solid var(--border-light); border-radius: var(--radius-lg); padding: 0.875rem 1.125rem; margin-bottom: 10px; }
+  .summary-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  .summary-person-info { display: flex; align-items: center; gap: 8px; }
+  .summary-total-val { font-weight: 700; font-size: 16px; }
+  .summary-items { padding-left: 8px; border-left: 2.5px solid; }
+  .summary-item-line { display: flex; justify-content: space-between; font-size: 12px; color: var(--text-secondary); padding: 1px 0; }
+  .bill-summary-row { display: flex; justify-content: space-between; font-size: 14px; padding: 5px 0; border-top: 0.5px solid var(--border-light); margin-top: 2px; color: var(--text-secondary); }
+  .bill-summary-row.grand { font-weight: 600; font-size: 15px; color: var(--text-primary); }
+
+  /* Split modal */
+  .modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.45); display: flex; align-items: flex-end; justify-content: center; z-index: 200; }
+  .modal-sheet { background: var(--bg-primary); border-radius: 20px 20px 0 0; padding: 0 1rem 2.5rem; width: 100%; max-width: 430px; animation: slide-up 0.22s ease-out; }
+  @keyframes slide-up { from { transform: translateY(100%); } to { transform: translateY(0); } }
+  .modal-handle-wrap { padding: 10px 0 16px; display: flex; justify-content: center; }
+  .modal-handle { width: 38px; height: 4px; border-radius: 2px; background: var(--border-mid); }
+  .modal-title { font-size: 16px; font-weight: 600; color: var(--text-primary); margin-bottom: 2px; }
+  .modal-sub { font-size: 13px; color: var(--text-secondary); margin-bottom: 1.25rem; }
+
+  .stepper-row { display: flex; align-items: center; gap: 12px; margin-bottom: 1rem; }
+  .stepper-btn { width: 44px; height: 44px; border-radius: 50%; border: 0.5px solid var(--border-mid); background: var(--bg-secondary); font-size: 22px; cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--text-primary); transition: background 0.15s; flex-shrink: 0; user-select: none; }
+  .stepper-btn:hover { background: var(--border-light); }
+  .stepper-btn:disabled { opacity: 0.25; cursor: default; }
+  .fraction-display { flex: 1; text-align: center; }
+  .fraction-num { font-size: 26px; font-weight: 600; color: var(--text-primary); }
+  .fraction-sub { font-size: 12px; color: var(--text-tertiary); margin-top: 2px; }
+
+  .split-preview { background: var(--bg-secondary); border-radius: var(--radius-md); padding: 10px 14px; margin-bottom: 1.25rem; }
+  .split-preview-row { display: flex; justify-content: space-between; font-size: 13px; padding: 2px 0; color: var(--text-secondary); }
+  .split-preview-row.paying { color: var(--green-text); font-weight: 600; font-size: 14px; }
+
+  /* Input */
+  input[type=text], input[type=number] {
+    background: var(--bg-secondary);
+    border: 0.5px solid var(--border-mid);
+    border-radius: var(--radius-md);
+    color: var(--text-primary);
+    font-size: 14px;
+    padding: 9px 12px;
+    outline: none;
+    width: 100%;
+    font-family: inherit;
+  }
+  input[type=text]:focus, input[type=number]:focus {
+    border-color: var(--green);
+    box-shadow: 0 0 0 2px rgba(29,158,117,0.15);
+  }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useRef, useCallback } = React;
+
+const PERSON_COLORS = [
+  { bg: '#1D9E75', light: '#E1F5EE', text: '#085041', border: '#9FE1CB' },
+  { bg: '#378ADD', light: '#E6F1FB', text: '#0C447C', border: '#B5D4F4' },
+  { bg: '#D85A30', light: '#FAECE7', text: '#4A1B0C', border: '#F5C4B3' },
+  { bg: '#7F77DD', light: '#EEEDFE', text: '#26215C', border: '#CECBF6' },
+  { bg: '#D4537E', light: '#FBEAF0', text: '#4B1528', border: '#F4C0D1' },
+  { bg: '#BA7517', light: '#FAEEDA', text: '#412402', border: '#FAC775' },
+];
+
+// ── Utilities ──────────────────────────────────────────────────────────────
+
+function getRemainder(assignment) {
+  if (!assignment) return 1;
+  if (assignment.type === 'full') return 0;
+  if (assignment.type === 'partial') return Math.max(0, 1 - assignment.paidFraction);
+  return 1;
+}
+
+function isFullyAssigned(assignment) {
+  if (!assignment) return false;
+  if (assignment.type === 'full') return true;
+  return assignment.paidFraction >= 0.9999;
+}
+
+// ── API ────────────────────────────────────────────────────────────────────
+
+async function analyzeReceiptWithClaude(base64Image, mimeType, apiKey) {
+  const response = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true',
+    },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-5',
+      max_tokens: 1000,
+      messages: [{
+        role: 'user',
+        content: [
+          { type: 'image', source: { type: 'base64', media_type: mimeType, data: base64Image } },
+          { type: 'text', text: `Extract all line items from this receipt. Return ONLY a JSON object — no markdown, no explanation:
+{"items":[{"name":"Item name","qty":1,"price":0.00}],"subtotal":0.00,"tax":0.00,"tip":0.00,"total":0.00,"currency":"$"}
+Rules: qty and price are numbers; price is per-unit; include subtotal/tax/tip/total as numbers (0 if absent); currency is the symbol.` }
+        ]
+      }]
+    })
+  });
+  const data = await response.json();
+  if (data.error) throw new Error(data.error.message || 'API error');
+  const text = data.content?.find(b => b.type === 'text')?.text || '';
+  return JSON.parse(text.replace(/```json|```/g, '').trim());
+}
+
+// ── Sub-components ─────────────────────────────────────────────────────────
+
+function StepBar({ step, total }) {
+  return (
+    <div className="step-bar">
+      {Array.from({ length: total }).map((_, i) => (
+        <div key={i} className={`step-dot ${i < step ? 'done' : i === step ? 'active' : ''}`} />
+      ))}
+    </div>
+  );
+}
+
+function PersonChip({ person, selected, colorIdx, onClick }) {
+  const col = PERSON_COLORS[colorIdx % PERSON_COLORS.length];
+  return (
+    <span className={`chip ${selected ? 'selected' : ''}`}
+      style={selected ? { background: col.bg } : {}}
+      onClick={onClick}>
+      {person}
+    </span>
+  );
+}
+
+function SplitModal({ item, itemIndex, persons, assignment, currency, onClose, onApply }) {
+  const remainder = getRemainder(assignment);
+  const itemTotal = item.price * item.qty;
+  const remainderAmount = itemTotal * remainder;
+
+  const [selectedPerson, setSelectedPerson] = useState(persons[0]);
+  const [denom, setDenom] = useState(2);
+
+  const fractionOfWhole = (1 / denom) * remainder;
+  const paying = remainderAmount / denom;
+  const newRemainder = remainderAmount - paying;
+
+  const apply = () => {
+    const existing = assignment && assignment.type === 'partial'
+      ? assignment
+      : { type: 'partial', splits: [], paidFraction: 0 };
+    const newSplits = [...existing.splits, { person: selectedPerson, fractionOfWhole, amount: paying }];
+    const newPaidFraction = Math.min(1, existing.paidFraction + fractionOfWhole);
+    onApply(itemIndex, { type: 'partial', splits: newSplits, paidFraction: newPaidFraction });
+    onClose();
+  };
+
+  return (
+    <div className="modal-backdrop" onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="modal-sheet">
+        <div className="modal-handle-wrap"><div className="modal-handle" /></div>
+        <div className="modal-title">{item.name}</div>
+        <div className="modal-sub">
+          {currency}{remainderAmount.toFixed(2)} remaining · {Math.round(remainder * 100)}% of item
+        </div>
+
+        <div className="section-label">Who's paying a portion?</div>
+        <div className="person-chips" style={{marginBottom: '1.125rem'}}>
+          {persons.map((p, pi) => (
+            <PersonChip key={p} person={p} selected={selectedPerson === p}
+              colorIdx={pi} onClick={() => setSelectedPerson(p)} />
+          ))}
+        </div>
+
+        <div className="section-label">Divide remainder by</div>
+        <div className="stepper-row">
+          <button className="stepper-btn" disabled={denom <= 2} onClick={() => setDenom(d => d - 1)}>−</button>
+          <div className="fraction-display">
+            <div className="fraction-num">1 / {denom}</div>
+            <div className="fraction-sub">of remaining {currency}{remainderAmount.toFixed(2)}</div>
+          </div>
+          <button className="stepper-btn" disabled={denom >= 20} onClick={() => setDenom(d => d + 1)}>+</button>
+        </div>
+
+        <div className="split-preview">
+          <div className="split-preview-row paying">
+            <span>{selectedPerson} pays</span>
+            <span>{currency}{paying.toFixed(2)}</span>
+          </div>
+          <div className="split-preview-row">
+            <span>Remainder after</span>
+            <span>{currency}{newRemainder.toFixed(2)}</span>
+          </div>
+        </div>
+
+        <div className="btn-row">
+          <button className="btn" onClick={onClose}>Cancel</button>
+          <button className="btn primary" onClick={apply}>Add to {selectedPerson}'s bill</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Main App ───────────────────────────────────────────────────────────────
+
+function App() {
+  const [step, setStep] = useState(0);
+  const [imgSrc, setImgSrc] = useState(null);
+  const [imgBase64, setImgBase64] = useState(null);
+  const [imgMime, setImgMime] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [receipt, setReceipt] = useState(null);
+  const [persons, setPersons] = useState(['Alice', 'Bob']);
+  const [newPerson, setNewPerson] = useState('');
+  const [assignments, setAssignments] = useState({});
+  const [splitModal, setSplitModal] = useState(null);
+  const [apiKey, setApiKey] = useState('YOUR_KEY_HERE');
+  const fileRef = useRef();
+
+  // ── File handling ──
+  const handleFile = useCallback((file) => {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const dataUrl = e.target.result;
+      setImgSrc(dataUrl);
+      setImgBase64(dataUrl.split(',')[1]);
+      setImgMime(file.type || 'image/jpeg');
+    };
+    reader.readAsDataURL(file);
+  }, []);
+
+  // ── Scan ──
+  const scanBill = async () => {
+    if (!apiKey.trim()) { setError('Please enter your Anthropic API key above.'); return; }
+    setLoading(true); setError(null);
+    try {
+      const result = await analyzeReceiptWithClaude(imgBase64, imgMime, apiKey.trim());
+      setReceipt(result); setAssignments({}); setStep(2);
+    } catch (err) {
+      setError('Error: ' + (err.message || 'Unknown error. Check your API key and try again.'));
+    } finally { setLoading(false); }
+  };
+
+  // ── People ──
+  const addPerson = () => {
+    const name = newPerson.trim();
+    if (name && !persons.includes(name)) { setPersons(p => [...p, name]); setNewPerson(''); }
+  };
+
+  const removePerson = (name) => {
+    setPersons(p => p.filter(x => x !== name));
+    const newA = {};
+    Object.keys(assignments).forEach(k => {
+      const a = assignments[k];
+      if (a.type === 'full' && a.person === name) return;
+      if (a.type === 'partial') {
+        const splits = a.splits.filter(s => s.person !== name);
+        if (splits.length === 0) return;
+        newA[k] = { ...a, splits, paidFraction: splits.reduce((s, x) => s + x.fractionOfWhole, 0) };
+        return;
+      }
+      newA[k] = a;
+    });
+    setAssignments(newA);
+  };
+
+  // ── Assignment ──
+  const assignFull = (idx, person) => {
+    setAssignments(a => {
+      const cur = a[idx];
+      if (cur && cur.type === 'full' && cur.person === person) {
+        const copy = { ...a }; delete copy[idx]; return copy;
+      }
+      return { ...a, [idx]: { type: 'full', person } };
+    });
+  };
+
+  const applyPartial = (idx, newAssignment) => {
+    setAssignments(a => ({ ...a, [idx]: newAssignment }));
+  };
+
+  const removePartialSplit = (idx, splitIdx) => {
+    setAssignments(a => {
+      const cur = a[idx];
+      if (!cur || cur.type !== 'partial') return a;
+      const splits = cur.splits.filter((_, i) => i !== splitIdx);
+      if (splits.length === 0) { const copy = { ...a }; delete copy[idx]; return copy; }
+      return { ...a, [idx]: { ...cur, splits, paidFraction: splits.reduce((s, x) => s + x.fractionOfWhole, 0) } };
+    });
+  };
+
+  const clearAssignment = (idx) => {
+    setAssignments(a => { const c = { ...a }; delete c[idx]; return c; });
+  };
+
+  // ── Summary calcs ──
+  const getPersonAmounts = (person) => {
+    if (!receipt) return { lines: [], total: 0 };
+    const billSubtotal = receipt.items.reduce((s, it) => s + it.price * it.qty, 0);
+    const extras = (receipt.tax || 0) + (receipt.tip || 0);
+    let itemsTotal = 0;
+    const lines = [];
+    receipt.items.forEach((item, i) => {
+      const a = assignments[i];
+      if (!a) return;
+      const fullPrice = item.price * item.qty;
+      if (a.type === 'full' && a.person === person) {
+        itemsTotal += fullPrice; lines.push({ name: item.name, amount: fullPrice });
+      } else if (a.type === 'partial') {
+        a.splits.filter(s => s.person === person).forEach(s => {
+          itemsTotal += s.amount;
+          lines.push({ name: `${item.name} (${Math.round(s.fractionOfWhole * 100)}%)`, amount: s.amount });
+        });
+      }
+    });
+    const ratio = billSubtotal > 0 ? itemsTotal / billSubtotal : 0;
+    return { lines, total: itemsTotal + extras * ratio };
+  };
+
+  const currency = receipt?.currency || '$';
+  const unassignedCount = receipt
+    ? receipt.items.filter((_, i) => !isFullyAssigned(assignments[i])).length
+    : 0;
+
+  // ── Render ─────────────────────────────────────────────────────────────
+
+  return (
+    <div className="app">
+      <div className="header">
+        <div className="header-icon"><i className="ti ti-receipt" aria-hidden="true" /></div>
+        <span className="header-title">SplitTab</span>
+      </div>
+      <StepBar step={step} total={4} />
+
+      {/* ── Step 0: Upload ── */}
+      {step === 0 && (
+        <div className="section">
+          <div className="section-label" style={{marginBottom:10}}>Scan your bill</div>
+          {!imgSrc ? (
+            <div className="upload-zone"
+              onClick={() => fileRef.current.click()}
+              onDrop={e => { e.preventDefault(); handleFile(e.dataTransfer.files[0]); }}
+              onDragOver={e => e.preventDefault()}>
+              <div className="upload-icon"><i className="ti ti-camera" aria-hidden="true" /></div>
+              <div className="upload-text">Take a photo or upload</div>
+              <div className="upload-sub">Tap to browse · drag & drop</div>
+              <input ref={fileRef} type="file" accept="image/*" capture="environment"
+                onChange={e => handleFile(e.target.files[0])} />
+            </div>
+          ) : (
+            <div className="card" style={{padding:'0.75rem'}}>
+              <img src={imgSrc} className="preview-img" alt="receipt preview" />
+              <div className="btn-row">
+                <button className="btn" onClick={() => { setImgSrc(null); setImgBase64(null); }}>
+                  <i className="ti ti-refresh" aria-hidden="true" /> Retake
+                </button>
+                <button className="btn primary" onClick={() => setStep(1)}>
+                  Next <i className="ti ti-arrow-right" aria-hidden="true" />
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── Step 1: People ── */}
+      {step === 1 && (
+        <div className="section">
+          <div className="section-label" style={{marginBottom:10}}>Who's splitting?</div>
+          <div className="card">
+            {persons.map((p, i) => {
+              const col = PERSON_COLORS[i % PERSON_COLORS.length];
+              return (
+                <div key={p} style={{display:'flex', alignItems:'center', gap:8, padding:'7px 0', borderBottom:'0.5px solid var(--border-light)'}}>
+                  <div className="badge" style={{background: col.bg}}>{p[0].toUpperCase()}</div>
+                  <span style={{flex:1, fontSize:14, color:'var(--text-primary)'}}>{p}</span>
+                  {persons.length > 1 && (
+                    <button className="btn xs" style={{color:'var(--text-tertiary)'}} onClick={() => removePerson(p)}>
+                      <i className="ti ti-x" aria-hidden="true" />
+                    </button>
+                  )}
+                </div>
+              );
+            })}
+            <div style={{display:'flex', gap:8, marginTop:10}}>
+              <input type="text" placeholder="Add person…" value={newPerson}
+                onChange={e => setNewPerson(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && addPerson()} />
+              <button className="btn sm primary" onClick={addPerson} style={{minWidth:42}}>
+                <i className="ti ti-plus" aria-hidden="true" />
+              </button>
+            </div>
+          </div>
+
+          <div className="btn-row">
+            <button className="btn" onClick={() => setStep(0)}><i className="ti ti-arrow-left" aria-hidden="true" /> Back</button>
+            <button className="btn primary" onClick={scanBill} disabled={loading || !imgBase64}>
+              {loading ? 'Scanning…' : <><i className="ti ti-scan" aria-hidden="true" /> Scan Bill</>}
+            </button>
+          </div>
+          {loading && (
+            <div className="loading-wrap" style={{marginTop:16}}>
+              <div className="spinner" />
+              <div style={{fontSize:13}}>Reading your receipt…</div>
+            </div>
+          )}
+          {error && <div style={{marginTop:10, fontSize:13, color:'#D85A30', wordBreak:'break-word'}}>{error}</div>}
+        </div>
+      )}
+
+      {/* ── Step 2: Assign Items ── */}
+      {step === 2 && receipt && (
+        <div className="section">
+          <div className="section-label" style={{marginBottom:8}}>Assign items</div>
+
+          {unassignedCount > 0 && (
+            <div className="banner-warn">
+              <i className="ti ti-alert-triangle" aria-hidden="true" />
+              {unassignedCount} item{unassignedCount > 1 ? 's' : ''} not fully assigned
+            </div>
+          )}
+
+          <div className="card" style={{padding:'0.75rem 1.125rem'}}>
+            {receipt.items.map((item, i) => {
+              const a = assignments[i];
+              const remainder = getRemainder(a);
+              const fullDone = isFullyAssigned(a);
+              const itemTotal = item.price * item.qty;
+
+              return (
+                <div className="item-block" key={i}>
+                  <div className="item-header">
+                    {item.qty > 1 && <span className="item-qty">×{item.qty}</span>}
+                    <span className="item-name">{item.name}</span>
+                    <span className="item-price">{currency}{itemTotal.toFixed(2)}</span>
+                  </div>
+
+                  {/* Partial split tags */}
+                  {a && a.type === 'partial' && a.splits.length > 0 && (
+                    <div className="split-tags">
+                      {a.splits.map((s, si) => {
+                        const pi = persons.indexOf(s.person);
+                        const col = PERSON_COLORS[pi % PERSON_COLORS.length];
+                        return (
+                          <span key={si} className="split-tag"
+                            style={{background: col.light, color: col.text, borderColor: col.border}}
+                            onClick={() => removePartialSplit(i, si)}>
+                            {s.person} {currency}{s.amount.toFixed(2)}
+                            <span className="split-tag-x">✕</span>
+                          </span>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {/* Progress bar */}
+                  {a && a.type === 'partial' && (
+                    <div className="partial-bar">
+                      <div className="partial-fill" style={{width: `${(1 - remainder) * 100}%`}} />
+                    </div>
+                  )}
+
+                  {/* Assignment controls */}
+                  {!fullDone ? (
+                    <div className="item-actions">
+                      <div className="person-chips" style={{flex:1}}>
+                        {persons.map((p, pi) => {
+                          const isFullSel = a && a.type === 'full' && a.person === p;
+                          return (
+                            <PersonChip key={p} person={p} selected={isFullSel}
+                              colorIdx={pi} onClick={() => assignFull(i, p)} />
+                          );
+                        })}
+                      </div>
+                      <button className="btn xs" style={{color:'var(--text-secondary)', flexShrink:0}}
+                        onClick={() => setSplitModal(i)}>
+                        <i className="ti ti-scissors" aria-hidden="true" /> Split
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="fully-done">
+                      <span className="done-label"><i className="ti ti-check" aria-hidden="true" /> Fully assigned</span>
+                      <button className="btn xs" style={{marginLeft:'auto', color:'var(--text-tertiary)'}}
+                        onClick={() => clearAssignment(i)}>Clear</button>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          {(receipt.tax > 0 || receipt.tip > 0) && (
+            <div className="card" style={{padding:'0.75rem 1.125rem'}}>
+              <div style={{fontSize:12, color:'var(--text-tertiary)', marginBottom:4}}>Extras — split proportionally</div>
+              {receipt.tax > 0 && <div className="extras-row"><span>Tax</span><span>{currency}{receipt.tax.toFixed(2)}</span></div>}
+              {receipt.tip > 0 && <div className="extras-row"><span>Tip</span><span>{currency}{receipt.tip.toFixed(2)}</span></div>}
+            </div>
+          )}
+
+          <div className="btn-row">
+            <button className="btn" onClick={() => setStep(1)}><i className="ti ti-arrow-left" aria-hidden="true" /> Back</button>
+            <button className="btn primary" onClick={() => setStep(3)}>
+              Summary <i className="ti ti-arrow-right" aria-hidden="true" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ── Step 3: Summary ── */}
+      {step === 3 && receipt && (
+        <div className="section">
+          <div className="section-label" style={{marginBottom:8}}>Summary</div>
+
+          {persons.map((person, pi) => {
+            const col = PERSON_COLORS[pi % PERSON_COLORS.length];
+            const { lines, total } = getPersonAmounts(person);
+            if (lines.length === 0) return null;
+            return (
+              <div className="summary-card" key={person}>
+                <div className="summary-head">
+                  <div className="summary-person-info">
+                    <div className="badge" style={{background: col.bg}}>{person[0].toUpperCase()}</div>
+                    <span style={{fontWeight:600, fontSize:15}}>{person}</span>
+                  </div>
+                  <span className="summary-total-val" style={{color: col.bg}}>{currency}{total.toFixed(2)}</span>
+                </div>
+                <div className="summary-items" style={{borderColor: col.bg}}>
+                  {lines.map((l, li) => (
+                    <div className="summary-item-line" key={li}>
+                      <span>{l.name}</span>
+                      <span>{currency}{l.amount.toFixed(2)}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+
+          {unassignedCount > 0 && (
+            <div className="banner-warn">
+              <i className="ti ti-alert-triangle" aria-hidden="true" />
+              {unassignedCount} item{unassignedCount > 1 ? 's' : ''} still not fully assigned
+            </div>
+          )}
+
+          <div className="card" style={{padding:'0.875rem 1.125rem'}}>
+            <div className="bill-summary-row">
+              <span>Subtotal</span>
+              <span>{currency}{(receipt.subtotal || receipt.items.reduce((s, i) => s + i.price * i.qty, 0)).toFixed(2)}</span>
+            </div>
+            {receipt.tax > 0 && <div className="bill-summary-row"><span>Tax</span><span>{currency}{receipt.tax.toFixed(2)}</span></div>}
+            {receipt.tip > 0 && <div className="bill-summary-row"><span>Tip</span><span>{currency}{receipt.tip.toFixed(2)}</span></div>}
+            <div className="bill-summary-row grand">
+              <span>Total</span>
+              <span>{currency}{(receipt.total || receipt.items.reduce((s, i) => s + i.price * i.qty, 0) + (receipt.tax || 0) + (receipt.tip || 0)).toFixed(2)}</span>
+            </div>
+          </div>
+
+          <div className="btn-row">
+            <button className="btn" onClick={() => setStep(2)}><i className="ti ti-arrow-left" aria-hidden="true" /> Back</button>
+            <button className="btn primary" onClick={() => { setStep(0); setImgSrc(null); setReceipt(null); setAssignments({}); }}>
+              <i className="ti ti-plus" aria-hidden="true" /> New Bill
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ── Split Modal ── */}
+      {splitModal !== null && receipt && (
+        <SplitModal
+          item={receipt.items[splitModal]}
+          itemIndex={splitModal}
+          persons={persons}
+          assignment={assignments[splitModal]}
+          currency={currency}
+          onClose={() => setSplitModal(null)}
+          onApply={applyPartial}
+        />
+      )}
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('service-worker.js');
+    });
+  }
+</script>
+</body>
+</html>
